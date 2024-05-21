@@ -203,6 +203,110 @@ CREATE TABLE test (a INT NOT NULL AUTO_INCREMENT,
 ```
 
 ### 2.3 Select
+**All fields**
+```sh
+SELECT * FROM table;
+```
+
+**Chỉ định các fields cụ thể**
+```sh
+SELECT id, name, age FROM user;
+
+-- or with alias
+
+SELECT u.id, u.name, u.age FROM user u;
+```
+
+**Select với condition**
+```sh
+SELECT OrderID, Quantity,
+CASE
+   WHEN Quantity > 30 THEN "The quantity is greater than 30"
+   WHEN Quantity = 30 THEN "The quantity is 30"
+   ELSE "The quantity is under 30"
+END
+FROM OrderDetails;
+```
+
+**Select sử dụng method**
+```sh
+-- concat string
+SELECT CONCAT("SQL ", "Tutorial ", "is ", "fun!") AS ConcatenatedString;
+
+-- lower case
+SELECT LOWER("SQL Tutorial is FUN!");
+
+-- trim string
+SELECT TRIM('    SQL Tutorial    ') AS TrimmedString;
+
+-- parse to date 
+SELECT DATE("2017-06-15");
+
+-- check null (null: 1, not null: 0)
+SELECT ISNULL(NULL); 
+
+-- more and more
+```
+
+**Where**
+Các biểu thức điều kiện
+* =	Equal	
+* \>	Greater than	
+* <	Less than	
+* \>=	Greater than or equal	
+* <=	Less than or equal	
+* <>	Not equal. Note: In some versions of SQL this operator may be written as !=	
+* BETWEEN	Between a certain range	
+* LIKE	Search for a pattern	
+* IN	To specify multiple possible values for a column
+
+```sh
+-- So sánh bằng
+SELECT * FROM Customers
+WHERE Country = 'Mexico';  
+
+-- So sánh trong khoảng
+SELECT * FROM orders
+WHERE order_date BETWEEN '2023-01-01' AND '2023-03-31';
+   AND price BETWEEN 1000 AND 5000;
+
+-- So sánh với like
+-- nhiều ký tự %
+SELECT * FROM customers WHERE name LIKE '%Smith%';
+
+-- nhiều ký tự _
+SELECT * FROM customers WHERE name LIKE '_Smith_';
+
+```
+
+**Order by**
+Sắp xếp records theo thứ tự chỉ định
+DESC: Giảm dần
+ASC: Tăng dần - Mặc định
+
+```sh
+SELECT id, name, age FROM user
+ORDER BY id;
+
+-- Sort theo nhiều field
+SELECT id, name, age FROM user
+ORDER BY id, name DESC;
+```
+
+**Sử dụng các hàm**
+Tìm kiếm thêm tại: https://www.w3schools.com/mysql/mysql_ref_functions.asp
+
+**GROUP BY**
+Gom các record có các field cùng giá trị
+```sh
+SELECT COUNT(CustomerID), Country
+FROM Customers
+GROUP BY Country
+ORDER BY COUNT(CustomerID) DESC;
+```
+
+**JOIN**
+![alt text](/img/MySqlJoinTypesThumbnail.png)
 
 ## 3. Cấu trúc MySQL Database
 ![alt text](/img/image.png)
