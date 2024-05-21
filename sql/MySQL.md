@@ -1,8 +1,9 @@
 # MySQL ALL
 
-1. Install
+1. Install và tính chất
    * MySQL installer
    * Docker
+   * Tính chất
 2. SQL trong MySQL
    * DDL
    * DML
@@ -98,6 +99,11 @@ sudo systemctl status mysql
 mysql -u root -p
 ```
 
+**Tính chất**
+ACID là gì?
+
+
+Transaction như nào?
 
 ## 2. SQL trong MySQL
 ### 2.1 DDL
@@ -307,6 +313,123 @@ ORDER BY COUNT(CustomerID) DESC;
 
 **JOIN**
 ![alt text](/img/MySqlJoinTypesThumbnail.png)
+*Nguồn trong ảnh
+
+### 2.4 Insert
+**Format**
+```sh
+INSERT INTO table_name (column1, column2, column3, ...)
+VALUES (value1, value2, value3, ...);
+
+-- or
+
+INSERT INTO table_name
+VALUES (value1, value2, value3, ...);
+```
+
+**Insert nhiều hơn 1 bản ghi và có giá trị cụ thể**
+```sh
+INSERT INTO table_name
+VALUES 
+(record1.value1, record1.value2, record1.value3, ...),
+(record2.value1, record2.value2, record2.value3, ...),
+(record3.value1, record3.value2, record3.value3, ...);
+```
+
+
+**Insert data từ câu lệch truy vấn**
+```sh
+INSERT INTO table2 (column1, column2, column3, ...)
+SELECT column1, column2, column3, ...
+FROM table1
+WHERE condition;
+```
+
+### 2.5 Update
+Update những record thoả mãn với giá trị chỉ định
+```sh
+UPDATE table_name
+SET column1 = value1, column2 = value2, ...
+WHERE condition;
+```
+
+Ví dụ:
+```sh
+UPDATE customers
+SET email = 'newemail@example.com'
+WHERE customer_id = 1;  
+```
+### 2.6 Delete
+Xoá những record thoả mãn điều kiện trong table
+```sh
+DELETE FROM table_name
+WHERE condition;
+```
+
+Ví dụ:
+```sh
+-- Xoá với record = 1
+DELETE FROM orders
+WHERE order_id = 1;
+
+-- Xoá tất cả records
+DELETE FROM orders;
+```
+
+### 2.7 Truncate
+Xoá tất cả data table
+```sh
+TRUNCATE TABLE table_name;
+```
+
+Ví dụ:
+```sh
+TRUNCATE TABLE customers;
+```
+
+So sánh Truncate và Delete
+|Tính năng |	TRUNCATE	|DELETE|
+|---|---|---|
+|Tốc độ|	Nhanh hơn|	Chậm hơn|
+|Xóa dữ liệu|	Xóa tất cả dữ liệu trong bảng|	Xóa dữ liệu dựa trên điều kiện|
+|Xóa khóa chính|	Có|	Không|
+|Yêu cầu xác nhận|	Không|	Có|
+|Khôi phục dữ liệu|	Khó khăn|	Dễ dàng|
+
+### 2.8 Drop 
+Drop data và layout table khỏi database
+```sh
+DROP TABLE table_name;
+```
+
+Ví dụ:
+```sh
+DROP TABLE customers;
+```
+
+**Drop có ràng buộc**
+Bỏ ràng buộc (Xoá khoá ngoại or drop table chứa khoá ngoại) > Drop table
+
+> Giả sử bạn có hai bảng orders và order_details. Bảng orders có cột order_id, bảng order_details có các cột order_id, product_id, quantity và unit_price. Bảng order_details có ràng buộc ngoại khóa tham chiếu đến cột order_id của bảng orders
+
+```sh
+-- Xoá liên kết khoá ngoại
+ALTER TABLE order_details DROP FOREIGN KEY order_details_fk_orders;
+
+-- Xoá table
+DROP TABLE orders;
+
+```
+
+### 2.9 View
+
+### 2.10 Proceduce
+
+### 2.11 Trigger
+
+
+### 2.12 Transaction
+
 
 ## 3. Cấu trúc MySQL Database
 ![alt text](/img/image.png)
