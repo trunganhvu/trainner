@@ -7,7 +7,7 @@
 2. SQL trong MySQL
    * DDL
    * DML
-   * Table (CREATE TABLE __ /CREATE TABLE __ AS SELECT __)
+   * Table (CREATE TABLE __ /CREATE TABLE __ AS SELECT __, Temp table)
    * Select (1/n trường, WHERE, ORDER BY, Sử dụng các hàm, GROUP BY, JOIN,..)
    * Insert (from 1 recors/select table)
    * Update
@@ -208,6 +208,22 @@ CREATE TABLE test (a INT NOT NULL AUTO_INCREMENT,
 		ENGINE=InnoDB SELECT b,c FROM test2;
 ```
 
+**Temp table**
+Temporary table là table để lưu dữ liệu tạm thời. Dữ liệu sẽ được xoá khi kết thúc session nên trong mỗi session riêng biệt có thể tạo 2 temporary table giống nhau. Khi drop database thì sẽ không tự động xáo data trong temporary table.
+Temp table sẽ không hiển thị trong lệch show tables;
+
+```sh
+CREATE TEMPORARY TABLE temp_transaction (
+id VARCHAR(50) NOT NULL,
+session_id VARCHAR(20) NOT NULL,
+amount FLOAT(4,2) NOT NULL DEFAULT 0.00
+);
+
+-- or
+
+CREATE TEMPORARY TABLE new_tbl SELECT * FROM orig_tbl LIMIT 0;
+```
+
 ### 2.3 Select
 **All fields**
 ```sh
@@ -397,7 +413,7 @@ So sánh Truncate và Delete
 |Khôi phục dữ liệu|	Khó khăn|	Dễ dàng|
 
 ### 2.8 Drop 
-Drop data và layout table khỏi database
+Drop data và layout table khỏi database. Lệch drop có thể xoá cả temporary table
 ```sh
 DROP TABLE table_name;
 ```
@@ -405,6 +421,9 @@ DROP TABLE table_name;
 Ví dụ:
 ```sh
 DROP TABLE customers;
+
+-- Xoá temporary table
+DROP TABLE temporary_table;
 ```
 
 **Drop có ràng buộc**
@@ -422,14 +441,230 @@ DROP TABLE orders;
 ```
 
 ### 2.9 View
+View là khung nhìn tổng hợp kết quả data từ nhiều talbe với những điều kiện với mục đích là 
+* Chỉ cung cấp dữ liệu cần thiết
+* Che giấu sự phức tạp, liên trong tables
+* Tổ chức dữ liệu từ nhiều nguồn không đồng nhất
 
-### 2.10 Proceduce
+Nhược điểm:
+* Không thể chứa mệnh đề COMPUTE hoặc COMPUTE BY
+* Vì tạo ra bảng tạm nên view sẽ làm tốn tài nguyên, chậm hệ thống.
+* Không thể chứa mệnh đề ORDER BY trừ khi có TOP n
+* Không thể chứa mệnh đề INTO
+* Không thể chứa các table tạm
+* Có tối đa 1024 cột
+Cú pháp:
+```sh
+CREATE [OR REPLACE] VIEW [db_name.]view_name [(column_list)]
+AS
+  select-statement;
+```
 
+Ví dụ:
+```sh
+-- Tạo view
+CREATE VIEW SalePerOrder
+   AS
+   SELECT orderNumber,
+   SUM  (quantityOrdered * priceEach) total
+   FROM orderDetails
+   GROUP by orderNumber
+   ORDER BY total DESC
+
+-- Sử dụng view
+SELECT total
+   FROM salePerOrder
+   WHERE orderNumber = 1000
+```
+
+
+### 2.10 Procedure và Function
+Stored Procedure và Function là một tập hợp các câu lệnh SQL dùng để thực thi một nhiệm vụ nhất định. Nó hoạt động giống như một hàm trong các ngôn ngữ lập trình khác.
+
+Procedure có thể hiểu là void method (Có thể có IN, OUT hoặc INOUT là parameter)
+Function có thể hiểu là function có kiểu trả về sử dụng return và IN là parameter. Nếu câu lệnh RETURN trả về một giá trị thuộc loại khác, thì giá trị đó sẽ bị ép buộc về loại thích hợp. Ví dụ: nếu một hàm chỉ định giá trị ENUM hoặc SET trong mệnh đề RETURNS, nhưng câu lệnh RETURN trả về một số nguyên, thì giá trị được trả về từ hàm là ENUM hoặc SET
+
+Ví dụ procedure:
+```sh
+-- Bình thường delimiter (Dấu phân cách) là dấu chấm phẩy (;)
+-- nhưng procedure là tập hợp lệnh nên bắt buộc phải sử dụng ;
+-- => Cần delimiter khác để đánh dấu kết thúc câu định nghĩa
+delimiter //
+
+-- Định nghĩa IN và OUT
+CREATE PROCEDURE citycount (IN country CHAR(3), OUT cities INT)
+-- Đánh đâu bắt đầu tập hợp lệch sql
+   BEGIN
+   -- Minh hoạ query select sử dụng country truyền vào
+   SELECT COUNT(*) INTO cities FROM world.city
+   WHERE CountryCode = country; -- Kết thúc 1 câu sql
+
+   -- Ngoài ra có thê thực hiện update, insert, delete và sử dụng reture
+   -- Kết thúc định nghĩa procedure
+   END//
+
+-- Tái định nghĩa delimiter cho các câu lệch sql   
+delimiter ;
+```
+
+Cách gọi đến procedure
+```sh
+-- Call đến procedure
+CALL citycount('JPN', @cities); -- cities in Japan
+
+-- Hiển thị ra kết quả
+SELECT @cities;
+```
+
+Ví dụ Function:
+```sh
+delimiter //
+
+-- Định nghĩa function với parameter country
+CREATE FUNCTION citycount (country CHAR(3))
+RETURNS INT -- Định nghĩa kiểu trả về
+DETERMINISTIC -- luôn trả về cùng một kết quả khi giống input
+-- NOT DETERMINISTIC: trả về kết quả thực tế phụ thuộc hệ thống
+BEGIN
+  DECLARE cities INT;
+  
+  SELECT COUNT(*) INTO cities
+  FROM world.city
+  WHERE CountryCode = country;
+
+  RETURN cities; -- Trả vê kết quả
+END//
+
+delimiter ;
+```
+
+
+Cách gọi Function:
+```sh
+SELECT citycount('USA');
+```
 ### 2.11 Trigger
+Trigger là một đối tượng được định danh trong CSDL và được gắn chặt với một sự kiện xảy ra trên một bảng nào đó (điều này có nghĩa là nó sẽ được tự động thực thi khi xảy ra một sự kiện trên một bảng). Các sự kiện này bao gồm: chèn (Insert), xóa (Delete) hay cập nhật (Update) một bảng.
 
+Mục đích: 
+* Đảm bảo, tự động, kiểm soát những thay đổi dữ liệu và toàn vẹn dữ liệu
+* Tự động công việc theo schedule
+
+Lưu ý:
+* Không sử dụng được trigger với temporary table
+* Không thể sử dụng giao tác (transaction) trong trigger
+* Tất cả các trigger của csdl không được trùng tên.
+Tạo trigger:
+```sh
+CREATE TRIGGER trigger_name BEFORE|AFTER INSERT|UPDATE|DELETE ON tablename
+FOR EACH ROW sql-code
+
+-- Ví dụ
+CREATE TRIGGER ins_sum BEFORE INSERT ON account
+FOR EACH ROW SET @sum = @sum + NEW.amount;
+````
+
+Xoá trigger
+```sh
+ALTER TRIGGER, SHOW CREATE TRIGGER, hoặc SHOW TRIGGER STATUS
+```
+
+Show triggers
+```sh
+SELECT * FROM Information_Schema.Trigger
+WHERE 
+   Trigger_schema = 'database_name' -- all trigger database
+   AND Event_object_table = 'table_name'; -- all trigger table
+```
+
+Detail trigger
+```sh
+SELECT * FROM Information_Schema.Trigger
+WHERE Trigger_schema = 'database_name' AND
+Trigger_name = 'trigger_name';
+```
+
+Ví dụ trigger sử dụng procedure
+```sh
+-- Tạo procedure
+delimiter //
+
+CREATE PROCEDURE citycount (IN country CHAR(3), OUT cities INT)
+BEGIN
+  SELECT COUNT(*) INTO cities
+  FROM world.city
+  WHERE CountryCode = country;
+END//
+
+delimiter ;
+
+
+-- Tạo trigger
+delimiter //
+
+CREATE TRIGGER after_country_update
+AFTER UPDATE ON world.country
+FOR EACH ROW
+BEGIN
+  DECLARE city_count INT;
+
+  -- Gọi stored procedure citycount
+  CALL citycount(NEW.CountryCode, city_count);
+
+  -- Ghi kết quả vào bảng log hoặc thực hiện tác vụ khác
+  INSERT INTO country_changes (CountryCode, CityCount, ChangeTime)
+  VALUES (NEW.CountryCode, city_count, NOW());
+END//
+
+delimiter ;
+```
 
 ### 2.12 Transaction
+START TRANSACTION or BEGIN: Đánh dấu bắt đầu transaction.<br>
+COMMIT: Commit (lưu vào disk) trạng thái hiện tại trong transaction<br>
+ROLLBACK: Khôi phục transaction về trạng thái, loại bỏ thay đổi từ đầu hoặc commit gần nhất.<br>
+SET autocommit: Set trạng thái tự động commit mặc định.<br>
+SAVEPOINT: Là các điểm trong transaction lưu trạng thái dữ liệu trước đó để roll đến thời điểm savepoint thay vì rollback từ đầu. Thời điểm savepoint này dữ liệu được lưu trữ tạm thời. Trường hợp Id tự tăng sẽ thực hiện tăng liên tục mà không giữ chỗ
+Việc START TRANSACTION không đồng nghĩa với disable autocommit<br>
 
+Ví dụ:
+```sh
+SET autocommit=0;
+START TRANSACTION;
+SELECT @A:=SUM(salary) FROM table1 WHERE type=1;
+UPDATE table2 SET summary=@A WHERE type=1;
+COMMIT;
+SET autocommit=1;
+```
+
+Ví dụ về savepoint, rollback
+```sh
+START TRANSACTION;
+
+-- Bước 1: Thực hiện thao tác đầu tiên
+INSERT INTO my_table (column1) VALUES ('value1'); -- Id=1
+
+-- Tạo savepoint đầu tiên
+SAVEPOINT savepoint1;
+
+-- Bước 2: Thực hiện thao tác thứ hai
+INSERT INTO my_table (column1) VALUES ('value2'); -- Id=2
+
+-- Tạo savepoint thứ hai
+SAVEPOINT savepoint2;
+
+-- Bước 3: Thực hiện thao tác thứ ba
+INSERT INTO my_table (column1) VALUES ('value3'); -- Id=3
+
+-- Nếu có lỗi trong bước 3, hoàn tác về savepoint1
+-- Khi này Id sẽ tính tiếp là 4
+ROLLBACK TO SAVEPOINT savepoin1;
+
+-- Xóa savepoint thứ hai, không cần nữa
+RELEASE SAVEPOINT savepoint2;
+
+COMMIT;
+```
 
 ## 3. Cấu trúc MySQL Database
 ![alt text](/img/image.png)
