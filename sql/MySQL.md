@@ -669,6 +669,19 @@ COMMIT;
 ## 3. Cấu trúc MySQL Database
 ![alt text](/img/image.png)
 ## 4. Tối ưu SQL trong MySQL
+### 4.1
+### 4.2
+### 4.3 Index
+Index gồm: Unique index, composite index
+Unique index: Dành có index đảm bảo data duy nhất (ví dụ như id, username...)
+Composite index: 2 hoặc nhiều cột có thể data không duy nhất
+
+```sh
+CREATE UNIQUE INDEX idx_unique ON table_name (column1, column2, ...);
+
+CREATE INDEX idx_composite ON table_name (column1, column2, ...);
+
+```
 ## 5. Tối ưu tham số trong MySQL
 ## 6. Sao lưu, khôi phục trong MySQL
 ## 7. So sánh với các loại Database
