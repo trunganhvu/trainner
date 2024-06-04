@@ -2,6 +2,7 @@ package Singleton;
 
 import java.io.ObjectStreamException;
 import java.io.Serializable;
+import java.util.Objects;
 
 public class SerializedSingleton implements Serializable {
     private static final long serialVersionUID = 1741825395699241705L;
@@ -28,4 +29,21 @@ public class SerializedSingleton implements Serializable {
         return SingletonHelper.instance;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        SerializedSingleton serializedSingleton = (SerializedSingleton) obj;
+
+        return true;
+    }
+
+//    @Override
+//    public int hashCode() {
+//        return super.hashCode();
+//    }
 }

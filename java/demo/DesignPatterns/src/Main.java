@@ -200,6 +200,7 @@ public class Main {
         System.out.println("serializedSingleton1 hashCode=" + serializedSingleton1.hashCode());
         System.out.println("serializedSingleton2 hashCode=" + serializedSingleton2.hashCode());
         System.out.println(serializedSingleton1 == serializedSingleton2); // true - false when not implement readResolve()
+        System.out.println(serializedSingleton1.equals(serializedSingleton2)); // true - false when not implement readResolve()
         System.out.println("enumSingleton1 hashCode=" + enumSingleton1.hashCode());
         System.out.println("enumSingleton2 hashCode=" + enumSingleton2.hashCode());
         System.out.println(enumSingleton1 == enumSingleton2); // true - always true
