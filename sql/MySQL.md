@@ -331,6 +331,15 @@ ORDER BY COUNT(CustomerID) DESC;
 ![alt text](/img/MySqlJoinTypesThumbnail.png)
 *Nguồn trong ảnh
 
+**Thứ tự thực hiện các thành phần trong câu select**
+1. FROM
+2. WHERE
+3. GROUP BY
+4. HAVING
+5. SELECT
+6. DISTINCT
+7. ORDER BY
+8. LIMIT/OFFSET
 ### 2.4 Insert
 **Format**
 ```sh
