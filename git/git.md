@@ -102,7 +102,7 @@ git push gitlab
 git init
 ```
 ### 3.2. Git add
->Thêm các thay đổi từ working directory vào staging area để chuẩn bị cho commit.
+>Thêm các thay đổi từ working directory vào staging area/index để chuẩn bị cho commit.
 ```sh
 git add <file_path>
 ```
@@ -115,6 +115,16 @@ git add .
 Add các file chỉ định
 ```sh
 git add folder1/ folder2/file1.txt
+```
+
+Add các file chỉ thay đổi
+```sh
+git add -u
+```
+
+Add các file chưa được theo dõi
+```sh
+git add -A
 ```
 
 ### 3.3. Git commit
@@ -130,11 +140,21 @@ Commit có nội dung
 git commit -m "Nội dung commit"
 ```
 
+Sửa commit cuốI cùng (amend)
+```sh
+git commit --amend -m "Updated commit message"
+```
+
 ### 3.4. Git status
 >Hiển thị trạng thái của working directory và staging area.
 
 ```sh
 git status
+```
+
+Check status của nhánh
+```sh
+git status -b
 ```
 
 ### 3.5. Git log
@@ -144,13 +164,91 @@ git status
 git log
 ```
 
+Hiển thị chỉ một số commit
+```sh
+git log -3
+```
+
+Hiển thị thông tin cụ thể
+```sh
+git log --stat
+```
+
+Hiển thị commit log ngắn gọn
+```sh
+git log --oneline
+```
+
+Hiển thị lịch sử commit đồ thị
+```sh
+git log --graph
+```
+
+Hiển thị commit chỉ từ một tác giả cụ thể
+```sh
+git log --author="trunganhvu"
+```
+
+Hiển thị commit chỉ từ một thời gian cụ thể
+```sh
+git log --since="2023-01-01"
+```
+
+Hiển thị chi tiết về các thay đổi của từng commit (lên, xuống, q để thoát)
+```sh
+git log -p
+```
+
 ### 3.6. Git branch
 >Thao tác các branches hiện có trong repository local.
 
-Hiện thị các branch ở local
+Hiển thị các branch ở local
 ```sh
 git branch
 ```
+
+Hiển thị các branch ở remote
+```sh
+git branch -r
+```
+
+Hiển thị các branch ở remote + local
+```sh
+git branch -a
+```
+
+Hiển thị các branch ở đã merge/chưa merge
+```sh
+git branch --merge
+
+git branch --no-merge
+```
+
+Tạo branch + **không** chuyển sang branch mới
+```sh
+git branch <new branch>
+```
+
+Chuyển sang branch mới
+```sh
+git switch <branch>
+```
+
+Tạo + Chuyển sang branch mới
+```sh
+git switch -c <branch>
+```
+
+Xoá branch đã merge (an toàn)
+```sh
+git branch -d <branch>
+```
+
+Xoá branch bất kể đã merge hay chưa merge (mạnh nhưng rủi ro mất branch)
+```sh
+git branch -D <branch>
+```
+
 
 
 ### 3.7. Git checkout
@@ -166,12 +264,38 @@ Tạo branch mới
 git checkout -b <branch_name>
 ```
 
+Checkout tới commit cụ thể
+```sh
+git checkout <commit-hash>
+
+git checkout <commit-hash> -- <file-path>
+```
+
 ### 3.8. Git reset
->Đặt lại HEAD tới một commit cụ thể và chuyển các thay đổi từ staging area trở về working directory.
+>Đặt lại HEAD tới một commit cụ thể và chuyển các thay đổi từ staging area trở về working directory. Có ba chế độ chính của git reset là --soft, --mixed (mặc định nếu không có tùy chọn nào được chỉ định), và --hard
 
 ```sh
 git reset <commit_hash>
 ```
+
+* git reset --soft: Di chuyển HEAD đến một commit cụ thể mà không làm thay đổi index và working directory. Các thay đổi từ commit mới đến commit cũ sẽ được đưa vào staging area để bạn có thể thực hiện lại commit với nội dung mới. **Reset về trạng thái commit chỉ định, Đưa toàn bộ trạng thái đã commit về dạng add**
+```sh
+git reset --soft <commit>
+git reset --soft HEAD~3
+```
+
+* git reset --mixed (mặc định): Di chuyển HEAD đến một commit cụ thể và đặt lại index (staging area) để phản ánh trạng thái của commit đó. Các thay đổi trong index được xóa đi, nhưng vẫn giữ lại các thay đổi trong working directory. **Reset về trạng thái commit chỉ định, nội dung được add và chưa commit bị xoá, giữ nguyên working directory**
+```sh
+git reset --mixed <commit>
+git reset --mixed <commit>
+```
+
+* git reset --hard: Di chuyển HEAD đến một commit cụ thể và thay đổi index (staging area) và working directory sao cho chúng giống với trạng thái của commit đó. Mọi thay đổi chưa được commit sẽ bị mất mát. **Reset về trạng thái commit chỉ định, những nôi dung chưa commit đều mất**
+```sh
+git reset --hard <commit>
+git reset --hard HEAD~1
+```
+
 
 ### 3.9. Git revert
 >Tạo một commit mới để đảo ngược một commit đã tồn tại trước đó.
@@ -186,3 +310,51 @@ git revert <commit_hash>
 ```sh
 git merge <branch_name>
 ```
+
+### 3.11. Git stash
+>Là một công cụ mạnh mẽ giúp bạn tạm thời lưu lại các thay đổi chưa được commit trong working directory và staging area, để bạn có thể chuyển sang một nhánh khác, thực hiện một công việc khác, hoặc pull các thay đổi từ remote repository mà không bị gián đoạn bởi các thay đổi chưa hoàn thành.
+<br>Các thay đổi tạm thời sẽ được lưu trữ trong một phần đặc biệt của cấu trúc Git được gọi là "refs" (references). Cụ thể hơn, chúng được lưu trong một ref có tên là refs/stash. **Git stash thực hiện lưu tất cả các file chưa được commit**
+
+Hiển thị danh sách tất cả các stash hiện có.
+```sh
+git stash list
+```
+
+Hiển thị nội dung stash trong file
+```sh
+git stash show -p stash@{0}
+```
+
+Stash các thay đổi hiện tại:
+```sh
+-- Chỉ stash các file sửa (update nội dung)
+git stash
+
+git stash save "My work in progress"
+
+-- push --keep-index (or use -k): Chỉ stash các file đc add (chưa lưu ở staging/index)
+git stash push --keep-index
+
+-- push --include-untracked (or use -u): Stash tất cả file (mới + sửa)
+git stash push --include-untracked
+```
+
+Áp dụng lại stash đã lưu vào workspace hiện tại:
+```sh
+-- apply + không xoá trong stash
+git stash apply
+git stash apply stash@{0}
+
+-- apply + xoá trong stash
+git stash pop
+git stash pop stash@{0}
+```
+
+Xoá và clear toàn bộ stash
+```sh
+git stash clear
+
+git stash drop stash@{1}
+```
+
+
