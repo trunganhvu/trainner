@@ -676,7 +676,28 @@ COMMIT;
 ```
 
 ## 3. Cấu trúc MySQL Database
-![alt text](/img/image.png)
+![alt text](./img/image.png)
+
+**Buffer pool/Buffer cache:** Là vùng bộ nhớ lưu data tạm trên disk. Buffer pool được lưu trữ dưới dạng các page (16KB) và có hai trạng thái là dirty page (data có thay đổi nhưng chưa lưu xuống dish) và clean (data thay đổi hoặc có data thay đổi những vừa được flush xuống disk.)
+
+**Redo log:** là nơi lưu những thay đổi DML(insert, update, delete) và lưu bằng các redo_logfile trong disk
+
+**Change buffer:** là nơi lưu trữ data tạm thời của các bảng sử dụng index, trước khi lưu vào chính các table đó (Insert, update, delete)
+
+**Adaptive hash index:** là cơ chế nhận biết dự liệu nào được truy cập nhiều sẽ được đặt trong memory để truy cập nhanh hơn
+
+**Log buffer:** Là một vùng lưu trữ trong bộ nhớ lưu các thông tin thay đổi để ghi xuống file dưới ổ cứng. Kích thước mặc định là 16MB.
+Tham khảo: https://tech.cybozu.vn/yeu-to-can-ban-can-biet-khi-tuning-innodb-trong-mysql-a3140/
+
+**tablespace:** Là khái niệm logic quản lý lưu vật lý các table có cùng tính chất. Có thể tự tạo tablespace để lưu dữ liệu cùng tính chất (tablespace thông tin KH, tablespace thông tin nhân viên)
+
+**System tablespace (ibdata1):** Là tablespace của hệ thống (MẶC ĐỊNH - KHÔNG CAN THIỆP)
+
+**Undo tablespace:** là tablespace lưu data cũ trong transaction để rollback
+
+**Temp tablespace (ibtmp1):** là table tạm có sẵn, sẽ được giải phóng sau session
+
+**Doublewrite buffer files:**
 ## 4. Tối ưu SQL trong MySQL
 ### 4.1
 ### 4.2
