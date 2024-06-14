@@ -298,18 +298,125 @@ git reset --hard HEAD~1
 
 
 ### 3.9. Git revert
->Tạo một commit mới để đảo ngược một commit đã tồn tại trước đó.
+>Tạo một commit mới để đảo ngược một commit đã tồn tại trước đó. Khác với git reset, **git revert tạo ra một commit mới để đảo ngược các thay đổi của commit trước đó**. Điều này giữ cho lịch sử của repository rõ ràng và dễ theo dõi, đặc biệt hữu ích trong các môi trường làm việc cộng tác
 
 ```sh
-git revert <commit_hash>
+git revert <commit_hash1> <commit_hash2..>
 ```
+
+Lịch sử commit **trước**
+```sh
+a1b2c3d - Commit 3
+e4f5g6h - Commit 2
+i7j8k9l - Commit 1
+```
+
+Thực hiện **revert commit số 2**
+```sh
+git revert e4f5g6h
+```
+
+Lịch sử commit **sau khi revert commit 2**
+```sh
+m1n2o3p - Revert "Commit 2"
+a1b2c3d - Commit 3
+e4f5g6h - Commit 2
+i7j8k9l - Commit 1
+```
+
+Revert commit nhưng không thực hiện commit luôn để chỉnh sửa thêm
+```sh
+git revert -n <commit>
+```
+
+Việc revert commit merge thì có thể chỉ định parent
+```sh
+*   merge-commit (M)
+|\
+| \
+|  * commit-on-feature (F) parent 2
+| /
+|/
+* commit-on-main (P) - parent 1
+```
+
+Revert giữ lại parent 1/2
+```sh
+git revert -m 1 merge-commit
+git revert -m 2 merge-commit
+```
+
+
 
 ### 3.10. Git merge
->Hợp nhất các thay đổi từ một branch vào branch hiện tại.
+>Hợp nhất các thay đổi từ một branch vào branch hiện tại. Có hai loại merge chính trong Git:<br>
+1.Fast-forward merge<br>
+2.Three-way merge
 
+Merge nhánh chỉ định vào nhánh đang đứng với -m message(optional)
 ```sh
-git merge <branch_name>
+git merge -m "Merging feature branch" <branch_name> 
 ```
+
+**Fast-forward merge**
+```sh
+A---B---C (main)
+         \
+          D---E (feature)
+```
+
+Graph sau merge
+```sh
+A---B---C---D---E (main, feature)
+```
+
+**Three-way merge**
+```sh
+A---B---C (main)
+ \      \
+  D---E---F (feature)
+```
+
+Graph sau merge
+```sh
+A---B---C-------G (main)
+ \      \     /
+  D---E---F (feature)
+```
+
+Tạo một merge commit ngay cả khi có thể thực hiện fast-forward. Điều này giúp giữ lại lịch sử của merge.
+```sh
+git merge --no-ff feature
+```
+
+Gộp tất cả các thay đổi từ branch được merge vào một commit duy nhất trên branch hiện tại. Commit này không lưu lại thông tin về merge.
+```sh
+git merge --squash feature 
+```
+
+Thực hiện commit ngay sau khi merge (đây là hành vi mặc định trừ khi sử dụng --no-commit).
+```sh
+git merge --commit feature
+```
+
+Thực hiện merge mà không tạo commit ngay lập tức, cho phép bạn xem xét và sửa đổi các thay đổi trước khi commit.    
+```sh
+git merge --no-commit feature
+```
+
+Giải quyết conflict
+File conflict sẽ có các đánh dấu
+```sh
+<<<<<<< HEAD
+Your changes on current branch
+=======
+Their changes on merge branch
+>>>>>>> branch-to-merge
+```
+
+Cách giải quyết:
+
+Xoá ký tự đánh dấu > Chỉnh sửa nội dung cho phù hợp > Add và commit merge
 
 ### 3.11. Git stash
 >Là một công cụ mạnh mẽ giúp bạn tạm thời lưu lại các thay đổi chưa được commit trong working directory và staging area, để bạn có thể chuyển sang một nhánh khác, thực hiện một công việc khác, hoặc pull các thay đổi từ remote repository mà không bị gián đoạn bởi các thay đổi chưa hoàn thành.
@@ -356,5 +463,160 @@ git stash clear
 
 git stash drop stash@{1}
 ```
+### 3.12. Git restore
+>Khôi phục các file chưa add về ban đầu.
+>Bỏ add và đưa thay đổi về working directory.
+>Khôi phục về file trong 1 commit cụ thể
 
+Phục hồi tất cả file
+```sh
+git restore .
+```
+
+Khôi phục các file đã sửa + chưa add vào staged về ban đầu
+```sh
+git restore <file>...
+```
+
+Khôi phục các file đã add vào staged về working directory
+```sh
+git restore --stage <file>...
+```
+
+Khôi phục files/folder về trạng thái trong 1 commit
+```sh
+git restore --source <commit> src/ 
+git restore --source <commit> test.txt
+```
+
+### 3.13. Git reflog
+>Theo dõi tất cả các tham chiếu tới working directory. Khi reset, amend commit git log sẽ không thấy được nhưng git reflog thấy được.
+
+Show all log
+```sh
+git reflog
+```
+
+xem reflog của một nhánh cụ thể:
+```sh
+git reflog show develop
+```
+
+Show n log
+```sh
+git reflog -n 10
+```
+
+Show log theo thời gian
+```sh
+git reflog --since="1 day ago"
+git reflog --since="2 days ago"
+git reflog --since="24 hoursgit reflog | grep commit
+ ago"
+```
+
+Grep log
+```sh
+git reflog --grep-reflog <pattern_key>
+git reflog --grep-reflog fix/implement
+```
+
+### 3.14. Git cherry pick
+>áp dụng một hoặc nhiều commit từ một nhánh này sang một nhánh khác
+
+Thực hiện bê commit_a (feature_a) sang feature_b (nhánh hiện tại)
+```sh
+git cherry-pick commit_a
+```
+
+Trường hợp cherry pick có conflict thì 
+* Cách 1: Resolve bằng text editor và cherry pick continues
+* Cách 2: Stash các file thay đổi rồi thực hiện cherry pick
+
+Cách 1:
+```sh
+-- 1.Resolve conflict
+-- 2.Tiếp tục cherry pick
+git cherry-pick --continue
+```
+
+Cách 2:
+```sh
+git stash
+git cherry-pick <commit>
+```
+
+Lệch cancel cherry pick
+```sh
+git cherry-pick --abort
+```
+
+Cherry pick với edit message
+```sh
+git cherry-pick -e <commit-hash>
+```
+
+Cherry pick nhiều commit liền nhau (các commit không liền nhau phải **pick từ cái 1**)
+```sh
+git cherry-pick <commit1>..<commitN>
+```
+
+
+### 3.15. Git rebase
+>Thực hiện base lại nhánh hiện tại bằng nhánh khác trên local
+
+Thực hiện rebase main ở develop: <br>
+1.checkout main > 2.pull origin main > 3.checkout develop > 4.pull origin develop > 5.rebase > 6.force push
+```sh
+git checkout main
+
+git fetch origin main
+
+git pull origin main
+
+git checkout develop
+
+git fetch origin develop
+
+git pull origin develop
+
+git rebase main
+
+git push origin develop -f
+```
+
+Trường hợp có conflict thực hiện resolve hoặc stash. Rồi tiếp tục rebase
+```sh
+git rebase --continue
+```
+
+Huỷ bỏ rebase
+```sh
+git rebase --abort
+```
+
+### 3.16. Git force
+>Là lệch ép buộc thực thi. Có hiệu lực với reset, push (chỉ dùng khi rebase), checkout, xoá branch
+
+Force với reset
+```sh
+git reset --hard HEAD
+```
+
+Force với push sử dụng khi rebase
+```sh
+git push origin <branch-name> --force
+git push origin <branch-name> -f
+```
+
+Force với xoá branch
+```sh
+git branch -D <branch-name>
+```
+
+Force với checkout nhánh mới và đưa code về trạng thái ban đầu
+```sh
+git checkout -f
+git checkout --force
+```
 
