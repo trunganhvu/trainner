@@ -697,7 +697,17 @@ Tham khảo: https://tech.cybozu.vn/yeu-to-can-ban-can-biet-khi-tuning-innodb-tr
 
 **Temp tablespace (ibtmp1):** là table tạm có sẵn, sẽ được giải phóng sau session
 
-**Doublewrite buffer files:**
+**General tablespace** là các tablespace được tạo theo nhu câu quản lý tập trung các bảng
+Cú pháp tạo:
+```sh
+CREATE TABLESPACE `DATA_TBS1` ADD DATAFILE 'data1.ibd';
+CREATE TABLE table1(
+   id INT PRIMARY KEY AUTO_INCREMENT,
+   name VARCHAR(100)
+) tablespace DATA_TBS1;
+```
+
+**Doublewrite buffer files:** là một cơ chế quan trọng trong InnoDB của MySQL nhằm đảm bảo tính toàn vẹn dữ liệu và bảo vệ chống lại sự cố ghi một phần (partial page writes). Cơ chế này giúp ngăn ngừa mất mát dữ liệu và đảm bảo rằng các trang dữ liệu (pages) của cơ sở dữ liệu được ghi một cách chính xác vào đĩa.
 ## 4. Tối ưu SQL trong MySQL
 ### 4.1
 ### 4.2
