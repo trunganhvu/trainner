@@ -12,7 +12,6 @@ import com.amazonaws.services.logs.model.DescribeLogStreamsRequest;
 import com.amazonaws.services.logs.model.InputLogEvent;
 import com.amazonaws.services.logs.model.LogStream;
 import com.amazonaws.services.logs.model.PutLogEventsRequest;
-import com.amazonaws.services.logs.model.PutLogEventsResult;
 
 @Service
 public class CloudWatchService {
@@ -31,73 +30,43 @@ public class CloudWatchService {
      */
     public void logMessageToCloudWatch(String message) {
 
-        List<InputLogEvent> logEvents = new ArrayList<InputLogEvent>();
+        List<InputLogEvent> logEvents = new ArrayList<>();
+
+        // Create message log
         InputLogEvent log = new InputLogEvent();
         Calendar calendar = Calendar.getInstance();
-
         log.setTimestamp(calendar.getTimeInMillis());
         log.setMessage(message);
+
         logEvents.add(log);
 
-        String token = null;
+        // Get list log stream
         DescribeLogStreamsRequest logStreamsRequest = new DescribeLogStreamsRequest(logGroupName);
 
         logStreamsRequest.withLimit(5);
-        List<LogStream> logStreamList = new ArrayList<LogStream>();
+        List<LogStream> logStreamList = new ArrayList<>();
         logStreamList = cloudWatchlog.describeLogStreams(logStreamsRequest).getLogStreams();
 
+        // Get token in log stream
+        String token = null;
         for (LogStream logStream : logStreamList) {
-            if (logStream.getLogStreamName().equals(logStreamName))
+            if (logStream.getLogStreamName().equals(logStreamName)) {
                 token = logStream.getUploadSequenceToken();
+                break;
+            }
         }
 
+        // Create and setup log event to log stream, log group
         PutLogEventsRequest putLogEventsRequest = new PutLogEventsRequest();
-        PutLogEventsResult putLogEventsResult = new PutLogEventsResult();
-        if (token != null) {
 
-            appendLogsToCloudWatchWithToken(putLogEventsRequest, putLogEventsResult, token, logEvents);
-        } else {
-            firstHitToCloudWatch(putLogEventsRequest, logEvents, putLogEventsResult);
+        putLogEventsRequest.setLogGroupName(logGroupName);
+        putLogEventsRequest.setLogStreamName(logStreamName);
+        putLogEventsRequest.setLogEvents(logEvents);
+        if (token != null) {
+            putLogEventsRequest.setSequenceToken(token);
         }
 
-    }
-
-    /**
-     * This method takes care to generate token for next iteration and also push
-     * logs to CloudWatch
-     *
-     * @param putLogEventsRequest
-     * @param putLogEventsResult
-     * @param token
-     * @param logEvents
-     */
-    private void appendLogsToCloudWatchWithToken(PutLogEventsRequest putLogEventsRequest,
-                                                 PutLogEventsResult putLogEventsResult, String token, List<InputLogEvent> logEvents) {
-        putLogEventsRequest.setLogGroupName(logGroupName);
-        putLogEventsRequest.setLogStreamName(logStreamName);
-        putLogEventsRequest.setLogEvents(logEvents);
-
-        putLogEventsRequest.setSequenceToken(token);
-
-        putLogEventsResult = cloudWatchlog.putLogEvents(putLogEventsRequest);
-
-    }
-
-    /**
-     * Method that is used for the first time to store logs to CloudWatch without
-     * token
-     *
-     * @param putLogEventsRequest
-     * @param logEvents
-     * @param putLogEventsResult
-     */
-    private void firstHitToCloudWatch(PutLogEventsRequest putLogEventsRequest, List<InputLogEvent> logEvents,
-                                      PutLogEventsResult putLogEventsResult) {
-        putLogEventsRequest.setLogGroupName(logGroupName);
-        putLogEventsRequest.setLogStreamName(logStreamName);
-        putLogEventsRequest.setLogEvents(logEvents);
-
-        putLogEventsResult = cloudWatchlog.putLogEvents(putLogEventsRequest);
-
+        // Push log
+        cloudWatchlog.putLogEvents(putLogEventsRequest);
     }
 }
