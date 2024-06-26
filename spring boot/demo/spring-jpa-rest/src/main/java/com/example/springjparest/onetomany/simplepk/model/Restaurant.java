@@ -31,4 +31,13 @@ public class Restaurant {
 
     @Column(nullable = false)
     private String name;
+
+    public void resetDishSet(Set<Dish> dishes) {
+        this.dishes.clear();
+        this.dishes.addAll(dishes);
+    }
+
+    public void clearDishs(){
+        this.dishes.clear();
+    }
 }

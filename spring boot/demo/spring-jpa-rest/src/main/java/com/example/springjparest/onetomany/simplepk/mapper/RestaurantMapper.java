@@ -1,6 +1,8 @@
 package com.example.springjparest.onetomany.simplepk.mapper;
 
+import com.example.springjparest.onetomany.simplepk.model.Dish;
 import com.example.springjparest.onetomany.simplepk.model.Restaurant;
+import com.example.springjparest.onetomany.simplepk.rest.dto.CreateRestaurantAllFieldRequest;
 import com.example.springjparest.onetomany.simplepk.rest.dto.CreateRestaurantRequest;
 import com.example.springjparest.onetomany.simplepk.rest.dto.RestaurantResponse;
 import com.example.springjparest.onetomany.simplepk.rest.dto.UpdateRestaurantRequest;
@@ -25,4 +27,10 @@ public interface RestaurantMapper {
     @Mapping(target = "dishes", ignore = true)
     void updateRestaurantFromRequest(UpdateRestaurantRequest updateRestaurantRequest,
                                      @MappingTarget Restaurant restaurant);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "dishes", ignore = true)
+    @Mapping(target = "name", source = "restaurantName")
+    Restaurant createRestaurantFromRequest(CreateRestaurantAllFieldRequest request);
+
 }
