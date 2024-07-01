@@ -712,7 +712,7 @@ CREATE TABLE table1(
 ### 4.1
 ### 4.2
 ### 4.3 Index
-Index gồm: Unique index, composite index
+Index gồm: Unique index, Single-Column Index, composite index
 Unique index: Dành có index đảm bảo data duy nhất (ví dụ như id, username...)
 Composite index: 2 hoặc nhiều cột có thể data không duy nhất
 
@@ -720,8 +720,61 @@ Composite index: 2 hoặc nhiều cột có thể data không duy nhất
 CREATE UNIQUE INDEX idx_unique ON table_name (column1, column2, ...);
 
 CREATE INDEX idx_composite ON table_name (column1, column2, ...);
+```
+
+#### Single-Column Index: Index chỉ sử dụng duy nhất 1 cột. Index
+
+Composite index: Thứ tự và việc sử dụng cột không chỉ trong điểu kiện where
+
+```sh
 
 ```
+
+#### Kiểu dữ liệu ảnh hưởng đến việc sử dụng index
+**TH1: Kiểu số (int)**
+```sh
+-- Định nghĩa cột là int và khai báo index
+CREATE TABLE `customers` (
+   ...
+  `salesRepEmployeeNumber` int DEFAULT NULL,
+  ...
+  KEY `salesRepEmployeeNumber` (`salesRepEmployeeNumber`),
+) 
+-- So sánh 2 cách sử dụng '1504' và 1504
+explain select * from classicmodels.customers where salesRepEmployeeNumber = '1504'
+
+explain select * from classicmodels.customers where salesRepEmployeeNumber = 1504
+
+-- KẾT QUẢ EXPLAIN: Cả 2 câu select đều sử dụng index -> Hiện năng không khác biệt
+```
+
+Kết quả so sánh explain
+![Index TH1](./img/Index_TH1.png)
+
+**TH2: Kiểu ký tự (varchar)**
+```sh
+-- Định nghĩa varchar và khai báo index cột officeCode
+CREATE TABLE `employees` (
+   ...
+  `officeCode` varchar(10) NOT NULL,
+  ...
+  KEY `officeCode` (`officeCode`),
+  ...
+  CONSTRAINT `employees_ibfk_2` FOREIGN KEY (`officeCode`) REFERENCES `offices` (`officeCode`)
+) 
+
+-- So sánh 2 cách sử dụng '1' và 1
+explain select * from classicmodels.employees where officeCode = '1';
+
+
+explain select * from classicmodels.employees where officeCode = 1;
+
+-- KẾT QUẢ EXPLAIN: ='1' CÓ sử dụng index, =1 KHÔNG sử dụng index (*Kết quả so sánh như ảnh dưới)
+```
+
+Kết quả so sánh explain
+![Index TH1](./img/Index_TH2.png)
+
 ## 5. Tối ưu tham số trong MySQL
 ## 6. Sao lưu, khôi phục trong MySQL
 ## 7. So sánh với các loại Database
