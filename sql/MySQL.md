@@ -19,8 +19,8 @@
    * SQL Explain analyze
    * SQL Index
    * SQL Partition
-   * Btree
-   * Khác
+   * Tối ưu query
+   * Tối ưu transaction
 5. Tối ưu tham số trong MySQL
    * Buffer Cache Hit
    * Table Cache Hit
@@ -330,6 +330,20 @@ ORDER BY COUNT(CustomerID) DESC;
 **JOIN**
 ![alt text](/img/MySqlJoinTypesThumbnail.png)
 *Nguồn trong ảnh
+
+**Joining table**
+Cơ chế join table có thể phải duyệt toàn bộ table nên có thể ảnh hưởng đến hiệu năng. 
+Version MySQL version 5 có Nested loop join và Merge join.
+Từ version 8 MySQL có bổ sung thêm Hash join.
+* Nested loop join: 2 vòng lặp. Vòng lặp bên ngoài duyệt qua các record ở table bên trái, hay còn gọi là drive table. Vòng lặp bên trong duyệt qua các record ở table bên phải, gọi là join table
+* Hash join: Hash build + Hash probe
+<br>-Hash build: Sử dụng table bé hơn và hash join column
+<br>-Hash probe: Duyệt table lớn + hash join columns + tìm kiếm trong hash table ở hashphase
+![Hash join](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTXbW47U3AeixlYpwTep03FZSt3qYe_NVaXZQ&s)
+* Merge join (Sort merge join):
+<br>-Sắp xếp 2 table theo FK
+<br>-Tận dụng việc sắp xếp giảm số lượng row sequence scan
+![Merge join](./img/Merge_join.png)
 
 **Thứ tự thực hiện các thành phần trong câu select**
 1. FROM
@@ -675,6 +689,69 @@ RELEASE SAVEPOINT savepoint2;
 COMMIT;
 ```
 
+**Tính chất ACID trong transaction:**
+* Atomicity (nguyên tử): Các thao tác trong transaction có kết quả thông nhất như nguyên tử. Tất cả thành công or tất cả không thành công (Abort or commit)
+* Consistency (nhất quán): Transaction sẽ được database từ trạng thái hợp lệ này sang trạng thái hợp lệ khác. Trạng thái trước và sau luôn đúng, tuân thủ thiết kế, chỉ khác giá trị data.
+* Isolation (Cô lập): Mỗi transaction, dữ liệu sẽ bị cố lập và không bị ảnh hưởng bởi transaction khác.
+* Durability (Bền vững): Khi transaction thành công thì trạng thái dữ liệu phải được đồng bộ xuống database.
+
+**Những vẫn đề khi transaction isolation is not done**
+* Dirty read: Transaction T2 đọc data chưa commit trong transaction T1
+=> Khi T1 rollback thì T2 sử dụng sai
+* Non-repeatable reads: Dữ liệu cần đọc không giống nhau qua các nhiều lần đọc. Xảy ra khi có transaction khác update cùng resource
+![Non-repeatable reads](https://vladmihalcea.com/wp-content/uploads/2018/06/NonRepeatableRead.png)
+* Phantom reads: Đọc dữ liệu mà không chắc nó sẽ tồn tại. Tương tự như non-repeatable reads nhưng xảy ra khi có transaction khác insert thêm resource.
+**Những định nghĩa về isolation levels:**
+* Read uncommitted - Đọc chưa xác nhận
+Mọi thay đổi từ transaction khác đểu có thể đọc được mà không cần committed -> nảy sinh vấn đề dirty reads
+* Read committed - Đọc đã được xác nhận
+Transaction chỉ đọc dữ liệu đã committed từ transaction hoàn thành -> Có thể nảy sinh non-repeatable reads
+* Repeatable Read - Đọc có thể lặp lại
+Transaction đảm bảo đữ liệu được đọc không thay đổi giữa các lần đọc -> Có thể nảy sinh phantom-reads
+* Serialiable - Chuỗi hóa (Highest Isolation, Lowest Performance)
+   1. Read Method: Khóa các row và table transaction sử dụng để đảm bảo data không thay đổi
+   2. Write Method: Khóa các row và table (khi insert) đảm bảo transaction khác không thể can thiệp
+   3. Serializable Snapshot Isolation (SSI): Khi một transaction bắt đầu, hệ thống sẽ tạo ra một snapshot của dữ liệu cơ sở dữ liệu hiện tại. Mỗi transaction sẽ đọc từ snapshot này, đảm bảo rằng dữ liệu đọc được là nhất quán và không bị thay đổi bởi các transaction khác đang thực hiện đồng thời. 
+
+
+**Các loại lock**
+* Share Lock: (Read-only lock) chỉ được phép đọc chứ không được ghi. Có thể nhiều transaction thực hiện trên 1 đơn vị dữ liệu bị Share lock
+* Exclusive Lock: (Write lock) được phép đọc + ghi data. Tại 1 thời điểm 1 exclusive lock transaction chỉ tác dụng trên 1 đơn vị data. Share lock KHÔNG thể đọc data bị lock trong Exclusive lock
+Exclusive lock thường được áp dụng mức độ cô lập Serializable để đảm báo các vấn đề non-repeatable read, dirty read, phantom.
+* Update lock: được phép đọc + ghi data.Tại 1 thời điểm 1 Update lock transaction chỉ tác dụng trên 1 đơn vị data. 
+Share lock CÓ thể đọc data bị lock trong Exclusive lock.
+Update lock thường được áp dụng mức độ cô lập Read committed và serializable.
+
+**Các kiểu quản lý concurrency**
+1. Pessimistic concurrency
+* Locking: Pessimistic concurrency thường sử dụng cơ chế locking để đảm bảo rằng chỉ có một transaction được phép truy cập và thay đổi dữ liệu vào cùng một thời điểm.
+* Khi một transaction muốn thực hiện thao tác đọc hoặc ghi trên một tài nguyên (ví dụ: hàng hoá trong bảng), nó sẽ yêu cầu khóa phù hợp với mức độ quyền cần thiết.
+* Mức độ khóa (Lock Granularity): Mức độ khóa có thể từ tối thiểu (nhỏ nhất là hàng) đến tối đa (lớn nhất là toàn bộ bảng).
+* Pessimistic concurrency thường áp dụng khóa tại mức độ hàng (row-level locking) hoặc mức độ bảng (table-level locking) tùy thuộc vào nhu cầu của transaction và quy mô của hệ thống.
+
+* Mức độ cô lập (Isolation Level): Pessimistic concurrency thường áp dụng các mức độ cô lập cao để đảm bảo rằng các transaction không gây ra các vấn đề như dirty read, non-repeatable read và phantom read.
+Các mức độ cô lập phổ biến như Serializable và Repeatable Read được sử dụng để đảm bảo tính nhất quán của dữ liệu trong khi các transaction đang chạy.
+Ví dụ trong việc update sản phẩm
+```sh
+-- Bắt đầu transaction A với mức độ cô lập Serializable
+BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+-- Yêu cầu khóa Exclusive cho hàng hoá có ProductID = 123
+SELECT * FROM Products WHERE ProductID = 123 FOR UPDATE;
+
+-- Thực hiện cập nhật số lượng hàng
+UPDATE Products SET Quantity = Quantity - 10 WHERE ProductID = 123;
+
+-- Commit transaction A
+COMMIT;
+```
+
+2. Optimistic concurrency
+* Fetch data kèm theo version hiện tại. Tất cả các transaction đều có thể fetch data mà không lo ngại vấn đề blocking.
+* Update data, đồng thời thêm một version mới.
+* Commit transaction. Bây giờ mới là lúc acquire lock. Bác Gấu kiểm tra version cũ của record đó có trùng với version hiện tại mà bác Gấu biết không. Nếu đúng thì cho phép update, đồng thời cập nhật version mới của data. Sau đó release lock. Nếu sai version thì.. tất nhiên rồi, lệnh update không thành công.
+* Khi update thất bại thì retry ở tầng application level
+
 ## 3. Cấu trúc MySQL Database
 ![alt text](./img/image.png)
 
@@ -709,8 +786,55 @@ CREATE TABLE table1(
 
 **Doublewrite buffer files:** là một cơ chế quan trọng trong InnoDB của MySQL nhằm đảm bảo tính toàn vẹn dữ liệu và bảo vệ chống lại sự cố ghi một phần (partial page writes). Cơ chế này giúp ngăn ngừa mất mát dữ liệu và đảm bảo rằng các trang dữ liệu (pages) của cơ sở dữ liệu được ghi một cách chính xác vào đĩa.
 ## 4. Tối ưu SQL trong MySQL
-### 4.1
-### 4.2
+### 4.1 SQL Explain
+> Lệnh EXPLAIN trong MySQL được sử dụng để hiển thị kế hoạch thực thi của một câu truy vấn SELECT. Nó cung cấp thông tin chi tiết về cách MySQL dự định thực thi câu truy vấn của bạn, bao gồm việc sử dụng các chỉ mục, thứ tự truy vấn các bảng, và các thao tác cần thiết để lấy kết quả.
+
+Ví dụ:
+```sh
+EXPLAIN SELECT * FROM employees WHERE officeCode = 1;
+```
+
+Kết quả:
+![Sql Explain](./img/sql_explain.png)
+
+Giải thích kết quả:
+* id: Số định danh cho từng phần của truy vấn. Các truy vấn đơn giản thường có id là 1, trong khi các truy vấn phức tạp hoặc truy vấn con có thể có nhiều giá trị id.
+* select_type: Loại của SELECT. Các giá trị phổ biến bao gồm:
+   * SIMPLE: Truy vấn đơn giản không có truy vấn con hoặc union.
+   * PRIMARY: Truy vấn ngoài cùng trong trường hợp có truy vấn con.
+   * SUBQUERY: Truy vấn con được chứa bên trong truy vấn khác.
+   * DERIVED: Truy vấn con trong FROM clause (bảng dẫn xuất).
+* table: Tên của bảng mà hàng này của kế hoạch thực thi đề cập tới.
+* partitions: Các phân vùng được sử dụng bởi bảng.
+* type: Loại kết nối giữa các bảng. Các giá trị phổ biến bao gồm:
+   * ALL: Quét toàn bộ bảng (table scan).
+   * index: Quét toàn bộ chỉ mục.
+   * range: Quét các hàng trong một phạm vi chỉ mục.
+   * ref: Tìm các hàng khớp với giá trị từ cột đã chỉ mục.
+   * eq_ref: Giống như ref, nhưng chỉ một hàng khớp cho mỗi tổ hợp từ bảng trước đó.
+   * const, system: Bảng có giá trị hằng số hoặc chỉ có một hàng.
+* possible_keys: Các chỉ mục có thể được sử dụng để tìm hàng.
+* key: Chỉ mục thực tế được sử dụng.
+* key_len: Chiều dài của khóa được sử dụng.
+* ref: Cột hoặc hằng số được so sánh với chỉ mục.
+* rows: Số lượng hàng mà MySQL ước tính phải đọc để tìm các hàng khớp.
+* filtered: Phần trăm các hàng được lọc bởi điều kiện WHERE.
+* Extra: Thông tin bổ sung. Một số giá trị phổ biến bao gồm:
+   * Using where: Điều kiện WHERE được áp dụng để lọc hàng.
+   * Using index: Truy vấn chỉ sử dụng chỉ mục để lấy dữ liệu, không cần truy cập bảng.
+   * Using filesort: MySQL cần thực hiện sắp xếp tạm thời.
+   * Using temporary: MySQL cần sử dụng bảng tạm thời để lưu trữ kết quả.
+
+### 4.2 SQL Explain Analyze
+> Lệnh ANALYZE có thể cung cấp thêm thông tin về việc thực thi truy vấn trong thực tế:
+
+```sh
+ANALYZE SELECT * FROM employees WHERE officeCode = 1;
+```
+
+Kết quả của ANALYZE sẽ cung cấp thông tin chi tiết hơn về kế hoạch thực thi, bao gồm cả thời gian thực tế. Chú ý khi thực hiện với câu lệch DML (INSERT/UPDATE/DELETE)
+
+
 ### 4.3 Index
 Index gồm: Unique index, Single-Column Index, composite index
 Unique index: Dành có index đảm bảo data duy nhất (ví dụ như id, username...)
@@ -774,6 +898,11 @@ explain select * from classicmodels.employees where officeCode = 1;
 
 Kết quả so sánh explain
 ![Index TH1](./img/Index_TH2.png)
+
+### 4.4 Partition
+### 4.5 Tối ưu query
+### 4.6 Tối ưu transaction
+
 
 ## 5. Tối ưu tham số trong MySQL
 ## 6. Sao lưu, khôi phục trong MySQL
