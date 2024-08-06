@@ -850,9 +850,6 @@ CREATE INDEX idx_composite ON table_name (column1, column2, ...);
 
 Composite index: Thứ tự và việc sử dụng cột không chỉ trong điểu kiện where
 
-```sh
-
-```
 
 #### Kiểu dữ liệu ảnh hưởng đến việc sử dụng index
 **TH1: Kiểu số (int)**
